@@ -1,0 +1,7 @@
+# Ignore everything by default
+*
+
+# Only track bingo app files
+!.gitignore
+!bingo_app.py
+!requirements.txt
