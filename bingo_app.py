@@ -152,11 +152,12 @@ with st.sidebar:
         JACKPOT = st.number_input(
             "Jackpot amount ($)", min_value=100, max_value=10000, value=1000, step=50
         )
-        NONJACKPOT_PAYOUT_RATIO = st.slider(
+        nonjackpot_pct = st.slider(
             "Non-jackpot payout (% of final round revenue)",
-            min_value=0.0, max_value=1.0, value=0.50, step=0.05,
-            format="%.0%%"
+            min_value=0, max_value=100, value=50, step=5,
+            format="%d%%"
         )
+        NONJACKPOT_PAYOUT_RATIO = nonjackpot_pct / 100
         SET_COST = st.number_input(
             "Cost per board set ($)", min_value=1.0, max_value=20.0, value=2.0, step=0.50
         )
