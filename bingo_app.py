@@ -65,10 +65,10 @@ def expected_share(your_boards, other_boards, q):
     return numerator / p_at_least_one
 
 def calculate_ev(your_sets, num_players, avg_sets, call_limit,
-                 jackpot=1000.0, nonjackpot_ratio=0.50, set_cost=2.0):
-    your_boards  = your_sets * BOARDS_PER_SET
+                 jackpot=1000.0, nonjackpot_ratio=0.50, set_cost=2.0, boards_per_set=3):
+    your_boards  = your_sets * boards_per_set
     other_sets   = round((num_players - 1) * avg_sets)
-    other_boards = other_sets * BOARDS_PER_SET
+    other_boards = other_sets * boards_per_set
     total_boards = your_boards + other_boards
     total_sets   = your_sets + other_sets
     revenue      = total_sets * set_cost
@@ -126,11 +126,11 @@ st.markdown("""
 
 # ── UI ───────────────────────────────────────────────────────
 
-st.title("🎱 Bingo Blackout — Extra Board Set Calculator")
-st.caption("Should you buy an extra $2 board set in the final round?")
-
 # Sidebar inputs
 with st.sidebar:
+    st.header("Navigation")
+    page = st.radio("", ["Calculator", "About"], label_visibility="collapsed")
+    st.divider()
     st.header("Game Parameters")
 
     num_players = st.number_input(
@@ -161,10 +161,72 @@ with st.sidebar:
         SET_COST = st.number_input(
             "Cost per board set ($)", min_value=1.0, max_value=20.0, value=2.0, step=0.50
         )
+        BOARDS_PER_SET = st.selectbox(
+            "Boards per set", options=[1, 2, 3], index=2
+        )
+
+if page == "About":
+    st.title("About This Calculator")
+    st.markdown("""
+    ### What is this?
+    This tool calculates the **expected value (EV)** of buying an extra board set
+    in the final blackout (coverall) round of a cash-prize bingo game.
+
+    ### The setup
+    Many bingo nights end with a **coverall round** — you must mark every number on
+    your board to win. A cash jackpot is awarded if someone achieves coverall within
+    a set number of calls (typically 50–60). If nobody wins within that limit, a
+    smaller consolation prize is paid out instead.
+
+    In the final round, players can buy **additional board sets** beyond their
+    standard entry. The question this tool answers is:
+
+    > *Given the number of players, the prize structure, and the call limit —
+    > is spending $2 on an extra set a positive or negative expected value decision?*
+
+    ### How it works
+    The calculator uses a **deterministic, iterative probability model** — no
+    random simulation. For each possible winning call number (24 through 75), it computes:
+
+    1. The probability that the first coverall in the room occurs on exactly that call
+    2. Your expected share of the prize at that call, accounting for ties and splits
+    3. Whether the jackpot or consolation prize applies
+
+    It sums these contributions across all possible call numbers to produce an exact
+    expected payout, then compares the marginal value of adding one more set against
+    its $2 cost.
+
+    ### When is it +EV to buy an extra set?
+    In general, extra sets become positive EV when:
+    - The **jackpot call limit is generous** (58+ calls)
+    - The **number of players is small** (fewer boards to compete against)
+    - The **jackpot is large** relative to total board sets in play
+    - The **average boards per player is low** (less competition)
+
+    Under a revenue-share consolation prize (e.g., 50% of final round revenue),
+    buying extra sets is almost always slightly negative — your extra $2 only adds
+    $1 to the consolation pool, which is then shared with everyone.
+    The fixed jackpot is where positive EV opportunities arise.
+
+    ### Context
+    This calculator was built for a specific local bar bingo format with a
+    **$1,000 fixed jackpot** and a **50% revenue-share consolation prize**.
+    The Advanced settings let you adapt it to other prize structures.
+
+    ### Limitations
+    - Assumes all players buy the same average number of sets
+    - Treats boards as independent (a very good approximation for blackout)
+    - Does not account for non-standard bingo card formats
+    """)
+    st.stop()
+
+st.title("🎱 Bingo Blackout — Extra Board Set Calculator")
+st.caption("Should you buy an extra board set in the final round?")
 
 # ── Calculations ─────────────────────────────────────────────
 
-kw = dict(jackpot=JACKPOT, nonjackpot_ratio=NONJACKPOT_PAYOUT_RATIO, set_cost=SET_COST)
+kw = dict(jackpot=JACKPOT, nonjackpot_ratio=NONJACKPOT_PAYOUT_RATIO,
+          set_cost=SET_COST, boards_per_set=BOARDS_PER_SET)
 
 base   = calculate_ev(your_sets,     num_players, avg_sets, call_limit, **kw)
 plus1  = calculate_ev(your_sets + 1, num_players, avg_sets, call_limit, **kw)
