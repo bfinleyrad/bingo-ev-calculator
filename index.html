@@ -124,7 +124,7 @@
 
 <header>
   <h1>Bingo Blackout EV Calculator</h1>
-  <p>Should you buy an extra board set in the final round?</p>
+  <p>Should you buy an additional board set in the blackout (coverall) round?</p>
 </header>
 
 <div class="container">
@@ -251,16 +251,31 @@
       <div class="about-content">
         <h3>What is this?</h3>
         <p>This tool calculates the <strong>expected value (EV)</strong> of buying an
-        extra board set in the final blackout (coverall) round of a cash-prize bingo game.</p>
+        additional board set in the blackout (coverall) round of a cash-prize bingo game.</p>
 
         <h3>The setup</h3>
-        <p>Many bingo nights end with a coverall round &mdash; you must mark every number
+        <p>Many bingo nights include a coverall round &mdash; you must mark every number
         on your board to win. A cash jackpot is awarded if someone achieves coverall within
         a set number of calls (typically 50&ndash;60). If nobody wins within that limit, a
         smaller consolation prize is paid out instead.</p>
-        <p>In the final round, players can buy additional board sets. The question this tool
-        answers is: <em>Given the number of players, the prize structure, and the call limit
-        &mdash; is spending money on an extra set a positive or negative expected value decision?</em></p>
+        <p>In the coverall round, players can often buy additional board sets. The question
+        this tool answers is: <em>Given the number of players, the prize structure, and the
+        call limit &mdash; is spending money on an additional set a positive or negative
+        expected value decision?</em></p>
+
+        <h3>What is a "board set"?</h3>
+        <p>A <strong>board set</strong> refers to one or more bingo boards sold together on
+        a single sheet of paper. For example, a sheet with 3 boards printed on it is a
+        board set of 3. Use the "Boards per Set" option under Advanced settings to match
+        the format at your venue.</p>
+
+        <h3>Bingo format assumed</h3>
+        <p>This calculator assumes <strong>standard 75-ball bingo</strong>: five columns
+        (B-I-N-G-O) with 15 numbers each (1&ndash;15, 16&ndash;30, 31&ndash;45, 46&ndash;60,
+        61&ndash;75), a 5&times;5 grid, and a free center square &mdash; giving 24 numbered
+        spaces per board. This is the most common format in the United States and Canada.
+        If your game uses a different number of balls (e.g., 80 or 90-ball bingo, common in
+        the UK and Australia), this calculator does not apply.</p>
 
         <h3>How it works</h3>
         <p>The calculator uses a <strong>deterministic, iterative probability model</strong>.
@@ -273,6 +288,21 @@
         <p>It sums these contributions to produce an exact expected payout, then compares the
         marginal value of one more set against its cost.</p>
 
+        <h3>Prize structure inputs</h3>
+        <p><strong>Jackpot Amount</strong> &mdash; the fixed dollar amount awarded if someone
+        achieves coverall within the call limit. This works for any fixed-prize format: a flat
+        jackpot, a progressive/rolling jackpot (enter the current accumulated value), or a
+        guaranteed prize. It does not need to be funded by that night's revenue.</p>
+        <p><strong>Jackpot Call Limit</strong> &mdash; the maximum number of balls that can be
+        called for the jackpot to be eligible. If no one achieves coverall by this call, the
+        consolation prize applies instead.</p>
+        <p><strong>Non-Jackpot Payout %</strong> &mdash; the consolation prize, expressed as a
+        percentage of the coverall round's total revenue (number of sets sold &times; cost per
+        set). For example, if 200 sets are sold at $2 each and the payout is 50%, the
+        consolation prize is $200. If your venue pays a flat consolation amount instead, you
+        can approximate it by calculating what percentage of revenue it represents and entering
+        that value.</p>
+
         <h3>When is it +EV?</h3>
         <ul>
           <li>The jackpot call limit is generous (58+ calls)</li>
@@ -283,9 +313,9 @@
 
         <h3>Limitations</h3>
         <ul>
+          <li>Assumes standard 75-ball bingo with a free center square (24 numbered spaces)</li>
           <li>Assumes all players buy the same average number of sets</li>
           <li>Treats boards as independent (a very good approximation for blackout)</li>
-          <li>Does not account for non-standard bingo card formats</li>
         </ul>
       </div>
     </details>
