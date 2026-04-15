@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bingo Blackout EV Calculator</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  /* ── Reset & base ─────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f5f7fa; color: #333; line-height: 1.5;
+    padding: 0 0 2rem;
+  }
+  header {
+    background: #1a1a2e; color: #fff; padding: 1rem 1.2rem;
+    position: sticky; top: 0; z-index: 100;
+  }
+  header h1 { font-size: 1.15rem; font-weight: 600; }
+  header p  { font-size: 0.8rem; color: #aab; margin-top: 0.15rem; }
+  .container { max-width: 860px; margin: 0 auto; padding: 0 1rem; }
+
+  /* ── Sections ─────────────────────────────────────────── */
+  .card {
+    background: #fff; border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    padding: 1.1rem 1.2rem; margin-top: 1rem;
+  }
+  .card h2 {
+    font-size: 1rem; font-weight: 600; margin-bottom: 0.7rem;
+    color: #1a1a2e; border-bottom: 2px solid #eee; padding-bottom: 0.4rem;
+  }
+
+  /* ── Input grid ───────────────────────────────────────── */
+  .input-grid {
+    display: grid; gap: 0.8rem;
+    grid-template-columns: 1fr 1fr;
+  }
+  .input-group { display: flex; flex-direction: column; }
+  .input-group label {
+    font-size: 0.78rem; font-weight: 500; color: #555; margin-bottom: 0.2rem;
+  }
+  .input-group input, .input-group select {
+    padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px;
+    font-size: 0.9rem; background: #fafbfc;
+  }
+  .input-group input:focus, .input-group select:focus {
+    outline: none; border-color: #4a6cf7; box-shadow: 0 0 0 2px rgba(74,108,247,0.15);
+  }
+  .slider-group { grid-column: 1 / -1; }
+  .slider-group input[type="range"] { width: 100%; margin-top: 0.2rem; }
+  .slider-value {
+    font-size: 0.85rem; font-weight: 600; color: #4a6cf7; float: right;
+  }
+
+  /* ── Collapsible advanced ─────────────────────────────── */
+  details { margin-top: 0.8rem; }
+  details summary {
+    font-size: 0.82rem; font-weight: 500; color: #4a6cf7; cursor: pointer;
+    list-style: none; display: flex; align-items: center; gap: 0.3rem;
+  }
+  details summary::before { content: "\25B6"; font-size: 0.6rem; transition: transform 0.2s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  details .input-grid { margin-top: 0.6rem; }
+
+  /* ── Metrics row ──────────────────────────────────────── */
+  .metrics {
+    display: grid; gap: 0.6rem;
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .metric {
+    background: #fafbfc; border-radius: 8px; padding: 0.7rem 0.8rem;
+    border-left: 3px solid #4a6cf7;
+  }
+  .metric .label { font-size: 0.7rem; color: #777; text-transform: uppercase; letter-spacing: 0.03em; }
+  .metric .value { font-size: 1.15rem; font-weight: 700; color: #1a1a2e; margin-top: 0.1rem; }
+
+  /* ── Decision banner ──────────────────────────────────── */
+  .decision {
+    border-radius: 8px; padding: 1rem 1.2rem;
+    margin-top: 0.8rem; text-align: center;
+  }
+  .decision .verdict { font-size: 1.1rem; font-weight: 700; }
+  .decision .detail  { font-size: 0.82rem; margin-top: 0.25rem; }
+  .decision.positive { background: #d4edda; border: 1px solid #b7dfbf; }
+  .decision.positive .verdict { color: #155724; }
+  .decision.negative { background: #f8d7da; border: 1px solid #f1aeb5; }
+  .decision.negative .verdict { color: #721c24; }
+  .decision.neutral  { background: #e2e3e5; border: 1px solid #d3d6d8; }
+  .decision.neutral  .verdict { color: #383d41; }
+
+  /* ── Chart ────────────────────────────────────────────── */
+  .chart-wrapper { position: relative; width: 100%; margin-top: 0.5rem; }
+  .chart-wrapper canvas { width: 100% !important; }
+
+  /* ── Table ────────────────────────────────────────────── */
+  .ev-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 0.5rem; }
+  .ev-table th {
+    background: #1a1a2e; color: #fff; padding: 0.5rem 0.6rem;
+    text-align: left; font-weight: 500; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .ev-table td { padding: 0.45rem 0.6rem; border-bottom: 1px solid #eee; }
+  .ev-table tr.pos { background: #eafbee; }
+  .ev-table tr.neg { background: #fef0f1; }
+  .ev-table td:nth-child(n+3) { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ── About ────────────────────────────────────────────── */
+  .about-content { font-size: 0.85rem; color: #444; }
+  .about-content h3 { font-size: 0.95rem; margin: 0.8rem 0 0.3rem; color: #1a1a2e; }
+  .about-content p, .about-content li { margin-bottom: 0.4rem; }
+  .about-content ul { padding-left: 1.3rem; }
+
+  /* ── Desktop ──────────────────────────────────────────── */
+  @media (min-width: 640px) {
+    .input-grid { grid-template-columns: 1fr 1fr 1fr; }
+    .metrics { grid-template-columns: repeat(4, 1fr); }
+    header h1 { font-size: 1.35rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Bingo Blackout EV Calculator</h1>
+  <p>Should you buy an extra board set in the final round?</p>
+</header>
+
+<div class="container">
+
+  <!-- ── Inputs ──────────────────────────────────────── -->
+  <div class="card">
+    <h2>Game Parameters</h2>
+    <div class="input-grid">
+      <div class="input-group">
+        <label for="numPlayers">Number of Players</label>
+        <input type="number" id="numPlayers" value="100" min="2" max="500">
+      </div>
+      <div class="input-group">
+        <label for="avgSets">Avg Sets / Player</label>
+        <input type="number" id="avgSets" value="2.0" min="1" max="10" step="0.5">
+      </div>
+      <div class="input-group">
+        <label for="yourSets">Your Current Sets</label>
+        <input type="number" id="yourSets" value="2" min="1" max="20">
+      </div>
+      <div class="slider-group input-group">
+        <label>Jackpot Call Limit <span class="slider-value" id="callLimitVal">56</span></label>
+        <input type="range" id="callLimit" min="48" max="75" value="56">
+      </div>
+    </div>
+    <details>
+      <summary>Advanced: Prize &amp; Cost Settings</summary>
+      <div class="input-grid">
+        <div class="input-group">
+          <label for="jackpot">Jackpot Amount ($)</label>
+          <input type="number" id="jackpot" value="1000" min="100" max="50000" step="50">
+        </div>
+        <div class="input-group">
+          <label for="nonjackpotPct">Non-Jackpot Payout %</label>
+          <input type="number" id="nonjackpotPct" value="50" min="0" max="100" step="5">
+        </div>
+        <div class="input-group">
+          <label for="setCost">Cost per Set ($)</label>
+          <input type="number" id="setCost" value="2.00" min="0.50" max="20" step="0.50">
+        </div>
+        <div class="input-group">
+          <label for="boardsPerSet">Boards per Set</label>
+          <select id="boardsPerSet">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+          </select>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- ── Current Position ────────────────────────────── -->
+  <div class="card">
+    <h2>Your Current Position</h2>
+    <div class="metrics">
+      <div class="metric">
+        <div class="label">Your Boards</div>
+        <div class="value" id="mYourBoards">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Total in Room</div>
+        <div class="value" id="mTotalBoards">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">P(Jackpot Hit)</div>
+        <div class="value" id="mPJackpot">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">P(You Win)</div>
+        <div class="value" id="mPYouWin">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Expected Payout</div>
+        <div class="value" id="mPayout">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Your Cost</div>
+        <div class="value" id="mCost">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Expected Profit</div>
+        <div class="value" id="mProfit">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Marginal EV</div>
+        <div class="value" id="mMarginal">—</div>
+      </div>
+    </div>
+    <div class="decision" id="decisionBanner">
+      <div class="verdict" id="decisionVerdict">—</div>
+      <div class="detail" id="decisionDetail">—</div>
+    </div>
+  </div>
+
+  <!-- ── Chart ───────────────────────────────────────── -->
+  <div class="card">
+    <h2>Net EV vs Call Limit</h2>
+    <div class="chart-wrapper">
+      <canvas id="evChart"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Table ───────────────────────────────────────── -->
+  <div class="card">
+    <h2>Marginal EV per Additional Set</h2>
+    <div style="overflow-x:auto;">
+      <table class="ev-table" id="evTable">
+        <thead>
+          <tr>
+            <th>Sets</th><th>Boards</th><th>E[Payout]</th>
+            <th>Marginal EV</th><th>Net</th><th>Decision</th>
+          </tr>
+        </thead>
+        <tbody id="evTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── About ───────────────────────────────────────── -->
+  <div class="card">
+    <details>
+      <summary><strong>About This Calculator</strong></summary>
+      <div class="about-content">
+        <h3>What is this?</h3>
+        <p>This tool calculates the <strong>expected value (EV)</strong> of buying an
+        extra board set in the final blackout (coverall) round of a cash-prize bingo game.</p>
+
+        <h3>The setup</h3>
+        <p>Many bingo nights end with a coverall round &mdash; you must mark every number
+        on your board to win. A cash jackpot is awarded if someone achieves coverall within
+        a set number of calls (typically 50&ndash;60). If nobody wins within that limit, a
+        smaller consolation prize is paid out instead.</p>
+        <p>In the final round, players can buy additional board sets. The question this tool
+        answers is: <em>Given the number of players, the prize structure, and the call limit
+        &mdash; is spending money on an extra set a positive or negative expected value decision?</em></p>
+
+        <h3>How it works</h3>
+        <p>The calculator uses a <strong>deterministic, iterative probability model</strong>.
+        For each possible winning call number (24 through 75), it computes:</p>
+        <ul>
+          <li>The probability that the first coverall in the room occurs on exactly that call</li>
+          <li>Your expected share of the prize, accounting for ties and splits</li>
+          <li>Whether the jackpot or consolation prize applies</li>
+        </ul>
+        <p>It sums these contributions to produce an exact expected payout, then compares the
+        marginal value of one more set against its cost.</p>
+
+        <h3>When is it +EV?</h3>
+        <ul>
+          <li>The jackpot call limit is generous (58+ calls)</li>
+          <li>The number of players is small</li>
+          <li>The jackpot is large relative to total board sets in play</li>
+          <li>The average boards per player is low</li>
+        </ul>
+
+        <h3>Limitations</h3>
+        <ul>
+          <li>Assumes all players buy the same average number of sets</li>
+          <li>Treats boards as independent (a very good approximation for blackout)</li>
+          <li>Does not account for non-standard bingo card formats</li>
+        </ul>
+      </div>
+    </details>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── Math engine ──────────────────────────────────────────────
+
+const TOTAL_NUMBERS    = 75;
+const SPACES_PER_BOARD = 24;
+
+// Log-space combination to avoid overflow
+// logComb(n, k) = log(C(n, k))
+function logComb(n, k) {
+  if (k < 0 || k > n) return -Infinity;
+  if (k === 0 || k === n) return 0;
+  if (k > n - k) k = n - k;
+  let s = 0;
+  for (let i = 0; i < k; i++) {
+    s += Math.log(n - i) - Math.log(i + 1);
+  }
+  return s;
+}
+
+// Probability single board completes blackout by call c
+function pCompleteBy(c) {
+  if (c < SPACES_PER_BOARD) return 0;
+  if (c >= TOTAL_NUMBERS)   return 1;
+  return Math.exp(logComb(c, SPACES_PER_BOARD) - logComb(TOTAL_NUMBERS, SPACES_PER_BOARD));
+}
+
+function pCompleteOn(c) {
+  if (c < SPACES_PER_BOARD) return 0;
+  return pCompleteBy(c) - pCompleteBy(c - 1);
+}
+
+// Binomial PMF in log space for numerical stability
+function binomPmf(k, n, p) {
+  if (k < 0 || k > n) return 0;
+  if (p === 0) return k === 0 ? 1 : 0;
+  if (p === 1) return k === n ? 1 : 0;
+  const logP = logComb(n, k) + k * Math.log(p) + (n - k) * Math.log(1 - p);
+  return Math.exp(logP);
+}
+
+// E[your_winners / total_winners | total_winners >= 1]
+function expectedShare(yourBoards, otherBoards, q) {
+  const total = yourBoards + otherBoards;
+  const pNone = Math.pow(1 - q, total);
+  const pAtLeastOne = 1 - pNone;
+  if (pAtLeastOne < 1e-300) return 0;
+
+  const maxY = Math.min(yourBoards, 25);
+  const maxZ = Math.min(otherBoards, 40);
+  let numerator = 0;
+
+  for (let y = 1; y <= maxY; y++) {
+    const py = binomPmf(y, yourBoards, q);
+    if (py < 1e-300) continue;
+    for (let z = 0; z <= maxZ; z++) {
+      const pz = binomPmf(z, otherBoards, q);
+      if (pz < 1e-300) continue;
+      numerator += (y / (y + z)) * py * pz;
+    }
+  }
+  return numerator / pAtLeastOne;
+}
+
+function calculateEV(yourSets, numPlayers, avgSets, callLimit,
+                     jackpot, nonjackpotRatio, setCost, boardsPerSet) {
+  const yourBoards  = yourSets * boardsPerSet;
+  const otherSets   = Math.round((numPlayers - 1) * avgSets);
+  const otherBoards = otherSets * boardsPerSet;
+  const totalBoards = yourBoards + otherBoards;
+  const totalSets   = yourSets + otherSets;
+  const revenue     = totalSets * setCost;
+  const consolation = nonjackpotRatio * revenue;
+
+  let evPayout    = 0;
+  let pJackpotHit = 0;
+  let pYouWin     = 0;
+
+  for (let c = SPACES_PER_BOARD; c <= TOTAL_NUMBERS; c++) {
+    const pByPrev = pCompleteBy(c - 1);
+    const pByC    = pCompleteBy(c);
+    const pNoWinBefore = Math.pow(1 - pByPrev, totalBoards);
+    const pNoWinByC    = Math.pow(1 - pByC,    totalBoards);
+    const pFirstWinOnC = pNoWinBefore - pNoWinByC;
+    if (pFirstWinOnC < 1e-300) continue;
+
+    const q = (pByPrev < 1) ? pCompleteOn(c) / (1 - pByPrev) : 1;
+    const eShare = expectedShare(yourBoards, otherBoards, q);
+    const prize  = (c <= callLimit) ? jackpot : consolation;
+
+    if (c <= callLimit) pJackpotHit += pFirstWinOnC;
+    evPayout += pFirstWinOnC * prize * eShare;
+
+    const pNoneYours = Math.pow(1 - q, yourBoards);
+    const pNoneAll   = Math.pow(1 - q, totalBoards);
+    if ((1 - pNoneAll) > 0) {
+      pYouWin += pFirstWinOnC * (1 - pNoneYours) / (1 - pNoneAll);
+    }
+  }
+
+  return {
+    yourSets, yourBoards, totalBoards, totalSets,
+    expectedPayout: evPayout,
+    expectedProfit: evPayout - yourSets * setCost,
+    pJackpotHit, pYouWin
+  };
+}
+
+// ── UI wiring ────────────────────────────────────────────────
+
+let evChart = null;
+
+function getInputs() {
+  return {
+    numPlayers:      parseInt(document.getElementById('numPlayers').value)     || 100,
+    avgSets:         parseFloat(document.getElementById('avgSets').value)      || 2,
+    yourSets:        parseInt(document.getElementById('yourSets').value)       || 2,
+    callLimit:       parseInt(document.getElementById('callLimit').value)      || 56,
+    jackpot:         parseFloat(document.getElementById('jackpot').value)      || 1000,
+    nonjackpotRatio: (parseFloat(document.getElementById('nonjackpotPct').value) || 50) / 100,
+    setCost:         parseFloat(document.getElementById('setCost').value)      || 2,
+    boardsPerSet:    parseInt(document.getElementById('boardsPerSet').value)   || 3,
+  };
+}
+
+function fmt$(v)  { return (v >= 0 ? '$' : '-$') + Math.abs(v).toFixed(2); }
+function fmt$4(v) { return (v >= 0 ? '$' : '-$') + Math.abs(v).toFixed(4); }
+function fmtPct(v){ return (v * 100).toFixed(2) + '%'; }
+
+function update() {
+  const p = getInputs();
+  const kw = [p.jackpot, p.nonjackpotRatio, p.setCost, p.boardsPerSet];
+
+  // Call limit display
+  document.getElementById('callLimitVal').textContent = p.callLimit;
+
+  // Core calculations
+  const base  = calculateEV(p.yourSets,     p.numPlayers, p.avgSets, p.callLimit, ...kw);
+  const plus1 = calculateEV(p.yourSets + 1, p.numPlayers, p.avgSets, p.callLimit, ...kw);
+  const marginalEV  = plus1.expectedPayout - base.expectedPayout;
+  const marginalNet = marginalEV - p.setCost;
+
+  // Metrics
+  document.getElementById('mYourBoards').textContent  = base.yourBoards + ' (' + p.yourSets + ' sets)';
+  document.getElementById('mTotalBoards').textContent  = base.totalBoards;
+  document.getElementById('mPJackpot').textContent     = fmtPct(base.pJackpotHit);
+  document.getElementById('mPYouWin').textContent      = fmtPct(base.pYouWin);
+  document.getElementById('mPayout').textContent       = fmt$(base.expectedPayout);
+  document.getElementById('mCost').textContent         = fmt$(p.yourSets * p.setCost);
+  document.getElementById('mProfit').textContent       = fmt$(base.expectedProfit);
+  document.getElementById('mMarginal').textContent     = fmt$4(marginalNet);
+
+  // Decision banner
+  const banner  = document.getElementById('decisionBanner');
+  const verdict = document.getElementById('decisionVerdict');
+  const detail  = document.getElementById('decisionDetail');
+  banner.className = 'decision';
+
+  if (marginalNet > 0.005) {
+    banner.classList.add('positive');
+    verdict.textContent = 'BUY — Positive EV';
+    detail.textContent  = 'One more set is +EV by ' + fmt$4(marginalNet) + ' at ' + p.callLimit + ' calls.';
+  } else if (marginalNet < -0.10) {
+    banner.classList.add('negative');
+    verdict.textContent = "DON'T BUY — Negative EV";
+    detail.textContent  = 'One more set is -EV by ' + fmt$4(Math.abs(marginalNet)) + ' at ' + p.callLimit + ' calls.';
+  } else {
+    banner.classList.add('neutral');
+    verdict.textContent = 'Approximately Break-Even';
+    detail.textContent  = 'Net edge is ' + fmt$4(marginalNet) + ' at ' + p.callLimit + ' calls.';
+  }
+
+  // ── Sweep chart ──────────────────────────────────────
+  const labels = [], dataVals = [], colors = [];
+  for (let cl = 48; cl <= 75; cl++) {
+    const r1 = calculateEV(p.yourSets,     p.numPlayers, p.avgSets, cl, ...kw);
+    const r2 = calculateEV(p.yourSets + 1, p.numPlayers, p.avgSets, cl, ...kw);
+    const net = (r2.expectedPayout - r1.expectedPayout) - p.setCost;
+    labels.push(cl);
+    dataVals.push(parseFloat(net.toFixed(4)));
+    colors.push(net > 0 ? '#2ecc71' : '#e74c3c');
+  }
+
+  const ctx = document.getElementById('evChart').getContext('2d');
+  if (evChart) evChart.destroy();
+  evChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Net EV of +1 Set ($)',
+        data: dataVals,
+        backgroundColor: colors,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) { return 'Net EV: $' + ctx.parsed.y.toFixed(4); }
+          }
+        },
+        annotation: undefined,
+      },
+      scales: {
+        x: { title: { display: true, text: 'Jackpot Call Limit' } },
+        y: { title: { display: true, text: 'Net EV of +1 Set ($)' },
+             grid: { color: function(ctx) { return ctx.tick.value === 0 ? '#333' : '#eee'; } }
+        }
+      }
+    }
+  });
+
+  // ── Marginal EV table ────────────────────────────────
+  const tbody = document.getElementById('evTableBody');
+  tbody.innerHTML = '';
+  let prevPayout = null;
+  for (let s = p.yourSets; s <= p.yourSets + 5; s++) {
+    const r = calculateEV(s, p.numPlayers, p.avgSets, p.callLimit, ...kw);
+    if (prevPayout !== null) {
+      const marg = r.expectedPayout - prevPayout;
+      const net  = marg - p.setCost;
+      const isPos = net > 0;
+      const tr = document.createElement('tr');
+      tr.className = isPos ? 'pos' : 'neg';
+      tr.innerHTML =
+        '<td>' + s + '</td>' +
+        '<td>' + r.yourBoards + '</td>' +
+        '<td>' + fmt$4(r.expectedPayout) + '</td>' +
+        '<td>' + fmt$4(marg) + '</td>' +
+        '<td>' + fmt$4(net) + '</td>' +
+        '<td>' + (isPos ? '+EV' : '-EV') + '</td>';
+      tbody.appendChild(tr);
+    }
+    prevPayout = r.expectedPayout;
+  }
+}
+
+// ── Event listeners ──────────────────────────────────────────
+
+document.querySelectorAll('input, select').forEach(function(el) {
+  el.addEventListener('input', update);
+  el.addEventListener('change', update);
+});
+
+// Initial render
+update();
+</script>
+
+</body>
+</html>
