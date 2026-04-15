@@ -567,9 +567,20 @@ function update() {
 
 // ── Event listeners ──────────────────────────────────────────
 
+let debounceTimer = null;
+
+function onInputChange() {
+  // Update slider label instantly so it feels responsive
+  document.getElementById('callLimitVal').textContent =
+    document.getElementById('callLimit').value;
+  // Debounce the expensive recalculation
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(update, 80);
+}
+
 document.querySelectorAll('input, select').forEach(function(el) {
-  el.addEventListener('input', update);
-  el.addEventListener('change', update);
+  el.addEventListener('input', onInputChange);
+  el.addEventListener('change', onInputChange);
 });
 
 // Initial render
